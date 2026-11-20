@@ -1,0 +1,218 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Muse EEG Dashboard demo</title>
+<style>
+/* Recreation of the Muse EEG Dashboard (dark), driven frame-by-frame by render(t) for the demo GIF. */
+:root{--bg:#111318;--card:#181b21;--card2:#1e2229;--line:#2a2f38;--ink:#e9ecf1;--ink2:#a7aeb9;--ink3:#7c8491;
+ --blue:#5ea3f7;--green:#57c26a;--amber:#e0a43c;--red:#e5534b;--tp9:#7fa6f5;--af7:#9fd25a;--af8:#e8ad4c;--tp10:#b98cf0;
+ --mono:"DejaVu Sans Mono",Menlo,monospace;--sans:Inter,-apple-system,"Helvetica Neue",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden}
+body{width:1600px;height:1262px;position:relative}
+header{height:62px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 0 0 16px;gap:18px}
+.logo{width:28px;height:28px;border-radius:7px;background:#2a3140;position:relative}
+.logo:before,.logo:after{content:"";position:absolute;top:8px;width:9px;height:9px;border-radius:50%}
+.logo:before{left:5px;background:#9cc2ff}.logo:after{left:14px;background:#f2c46b}
+.brand{font-weight:600;font-size:19px}
+.stream{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 14px;font-size:17px;background:var(--card)}
+.dot{width:11px;height:11px;border-radius:50%;background:var(--green)}
+.pillbtn{border:1px solid var(--line);background:#262b33;border-radius:999px;padding:6px 14px;font-size:15px}
+.hbtn{border:1px solid var(--line);background:var(--card2);border-radius:10px;padding:11px 16px;font-size:18px}
+.right{margin-left:auto;display:flex;gap:18px;padding-right:2px}
+.cols{display:grid;grid-template-columns:460px 1fr;gap:24px;padding:22px 4px 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:24px}
+.card h3{margin:0 0 16px;font-size:18px;font-weight:600}
+label{display:block;color:var(--ink2);font-size:16px;margin:0 0 8px}
+.inp{background:#111317;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:17px;color:var(--ink)}
+.mono{font-family:var(--mono)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sel{display:flex;justify-content:space-between;align-items:center}
+.sel:after{content:"⌄";color:var(--ink2);margin-top:-6px}
+.muted{color:var(--ink3)}
+.btn{margin-top:18px;border-radius:12px;padding:16px;text-align:center;font-weight:600;font-size:19px;background:var(--blue);color:#0d1a2b;transition:none;position:relative}
+.btn.stop{background:#3a1f22;color:#ff9a93;border:1px solid #6b2f30}
+.btn.pressed{filter:brightness(.85);transform:scale(.985)}
+.sq{display:grid;grid-template-columns:62px 1fr 92px 76px;align-items:center;gap:10px;margin:12px 0;font-size:16px}
+.sq b{font-family:var(--mono);font-size:16px}
+.bar{height:7px;border-radius:4px;background:#2a2f38;overflow:hidden}.bar i{display:block;height:100%;border-radius:4px}
+.val{font-family:var(--mono);color:var(--ink2);text-align:right;font-size:16px}
+.badge{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.06em;text-align:center;padding:5px 0;border-radius:6px}
+.b-good{background:#1d3324;color:#6dd17e}.b-adj{background:#3a2f17;color:#e9b44c}.b-poor{background:#3d1d1d;color:#f0706a}
+.hint{color:var(--ink2);font-size:15.5px;line-height:1.45;margin-top:14px}
+.dim{opacity:.45}
+.sess .k{font-family:var(--mono);color:var(--ink2);letter-spacing:.12em;font-size:14px;display:flex;align-items:center;gap:10px}
+.rec{color:#ff6b62;font-weight:700;letter-spacing:.08em;display:none;align-items:center;gap:6px}.rec i{width:9px;height:9px;border-radius:50%;background:#ff4d43}
+.sess .title{font-size:34px;font-weight:700;margin-top:8px}
+.sess .big{position:absolute;right:26px;top:30px;font-family:var(--mono);font-size:68px;font-weight:700;letter-spacing:.02em}
+.sess .msg{font-size:20px;margin:44px 0 22px;min-height:28px}
+.tl{height:30px;border-radius:7px;background:#1f232a;color:var(--ink2);font-size:15px;padding:6px 14px;position:relative;overflow:hidden}
+.tlbar{position:absolute;inset:7px 10px;display:none}
+.tlbar span{position:absolute;top:0;bottom:0;border-radius:2px}
+.ph{position:absolute;top:-6px;bottom:-6px;width:3px;background:#fff;border-radius:2px;box-shadow:0 0 6px #fff}
+.done{position:absolute;top:0;bottom:0;left:0;background:rgba(0,0,0,.45)}
+.stats{display:flex;gap:30px;margin-top:20px;color:var(--ink2);font-size:18px;align-items:center}
+.stats b{color:var(--ink);font-family:var(--mono);font-size:17px;font-weight:600}
+.chk{margin-left:auto;display:flex;align-items:center;gap:9px;color:var(--ink2)}.chk i{width:18px;height:18px;border-radius:4px;background:var(--blue);display:inline-flex;align-items:center;justify-content:center;color:#0d1a2b;font-style:normal;font-size:13px;font-weight:900}
+.eeghead{display:flex;align-items:center;gap:12px;font-size:17px}
+.eeghead .sub{color:var(--ink2);font-weight:600}
+.eeghead .ctl{margin-left:auto;display:flex;gap:12px;align-items:center;color:var(--ink2)}
+.small{background:#111317;border:1px solid var(--line);border-radius:9px;padding:6px 12px;color:var(--ink);font-size:16px}
+canvas{display:block}
+.bp{display:flex;gap:44px;align-items:flex-end;height:120px;margin-top:6px;padding-left:20px}
+.bp div{width:44px;position:relative;border-radius:4px 4px 0 0}
+.bp div em{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-style:normal;font-family:var(--mono);font-size:15px;color:var(--ink);font-weight:700}
+.legend{display:flex;gap:18px;color:var(--ink2);font-size:15px}.legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.cap{position:absolute;left:16px;width:460px;top:1138px;background:#141c2a;border:1px solid #2f4a73;border-radius:16px;padding:18px 20px;font-size:20px;line-height:1.35;display:flex;gap:14px;align-items:flex-start}.cap small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.12em;color:#7fa6f5;margin-bottom:6px}
+.cap .n{background:var(--blue);color:#0d1a2b;font-weight:800;border-radius:999px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;font-size:17px}
+.ff{position:absolute;right:30px;top:80px;background:#2b3240;border:1px solid #46505f;border-radius:999px;padding:8px 18px;font-family:var(--mono);font-size:18px;display:none}
+#cursor{position:absolute;width:26px;height:34px;z-index:9;pointer-events:none}
+.ripple{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,.8);pointer-events:none;display:none}
+</style></head><body>
+<header>
+ <div class="logo"></div><div class="brand">Muse EEG Dashboard</div>
+ <div class="stream"><span class="dot"></span>Streaming from Muse-EF21<span class="pillbtn">Disconnect</span></div>
+ <div class="right"><span class="hbtn">Subject screen</span><span class="hbtn">⧉</span><span class="hbtn">Quit</span></div>
+</header>
+<div class="cols">
+ <div>
+  <div class="card" id="cFolder"><h3>Data folder</h3>
+   <div style="display:flex;gap:10px"><div class="inp mono" style="flex:1;white-space:nowrap;overflow:hidden;font-size:16px">/Users/niloy/Documents/Muse</div><div class="hbtn" style="font-size:17px">Choose…</div></div>
+   <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:16px"><span class="muted mono" id="saves">Saves to sub-01/ses-01/</span><span style="color:var(--blue)">Open in Finder</span></div>
+  </div>
+  <div class="card"><h3>Session</h3>
+   <div id="formA">
+   <div class="row2"><div><label>Subject ID</label><div class="inp">01</div></div><div><label>Session ID</label><div class="inp" id="sesid">01</div></div></div>
+   <label style="margin-top:16px">Type</label><div class="inp sel">Workload task: arithmetic vs rest</div>
+   <label style="margin-top:16px">Protocol</label><div class="inp sel">Full study</div>
+   <label style="margin-top:16px">Notes</label><div class="inp muted" style="height:66px">Optional. Saved in session.json</div>
+   <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:18px"><span class="muted">Session length</span><b class="mono">21:05 · 20 trials</b></div>
+   </div>
+   <div class="btn" id="startbtn">Start recording</div>
+  </div>
+  <div class="card"><h3>Signal quality</h3>
+   <div id="sqrows"></div>
+   <div class="hint" id="hint"></div>
+  </div>
+ </div>
+ <div>
+  <div class="card sess" style="position:relative;height:322px">
+   <div class="k">SESSION <span class="rec" id="rec"><i></i>REC</span></div>
+   <div class="title" id="ptitle">Ready</div>
+   <div class="big" id="ptimer">--:--</div>
+   <div class="msg" id="pmsg">Check signal quality, then press <b>Start recording</b>.</div>
+   <div class="tl"><span id="tlph">The session timeline appears here once recording starts.</span><div class="tlbar" id="tlbar"></div></div>
+   <div class="stats"><span>Block <b id="sBlock">–</b></span><span>Trial <b id="sTrial">–</b></span><span>Elapsed <b id="sEl">–</b></span><span>Remaining <b id="sRem">–</b></span><span>Samples <b id="sSmp">–</b></span>
+    <span class="chk"><i>✓</i>Sound cues</span></div>
+   <div class="ff" id="ff"></div>
+  </div>
+  <div class="card" style="height:584px;padding-right:20px">
+   <div class="eeghead"><b>Live EEG</b><span class="sub">1–40 Hz filtered for display · raw is saved</span>
+    <span class="ctl">Window <span class="small">10 s ⌄</span> Scale <span class="small">Auto ⌄</span><span class="mono">256 Hz</span></span></div>
+   <canvas id="eeg" width="1052" height="516"></canvas>
+  </div>
+  <div class="card" style="height:196px">
+   <div class="eeghead"><b>Band power</b><span class="sub">relative, mean of 4 channels, last 4 s</span>
+    <span class="ctl legend"><span><i style="background:#6f8ef7"></i>delta</span><span><i style="background:#4cc3b0"></i>theta</span><span><i style="background:#9fd25a"></i>alpha</span><span><i style="background:#e8ad4c"></i>beta</span><span><i style="background:#ef6a8a"></i>gamma</span></span></div>
+   <div class="bp" id="bp" style="margin-top:34px;height:110px"></div>
+  </div>
+ </div>
+</div>
+<div class="cap" id="cap"><span class="n" id="capn">1</span><span><small>DEMO · STEP <b id="capk"></b> OF 5</small><span id="capt"></span></span></div>
+<svg id="cursor" viewBox="0 0 26 34"><path d="M2 2 L2 27 L8.5 21 L13 31 L17 29 L12.5 19.5 L21 19.5 Z" fill="#fff" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/></svg>
+<div class="ripple" id="ripple"></div>
+<script>
+const FS=256, CH=["TP9","AF7","AF8","TP10"], COL=["#7fa6f5","#9fd25a","#e8ad4c","#b98cf0"];
+// ---------- deterministic simulated EEG (40 s, starting 10 s before t=0) ----------
+let seed=7; const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+const gauss=()=>{let u=rnd()||1e-9,v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const N=FS*70, sig=CH.map(()=>new Float32Array(N));
+const blinks=[];for(let s=-9.3;s<58;s+=2.1+rnd()*2.2)blinks.push(s);
+for(let c=0;c<4;c++){let a=0,b=0,ph=rnd()*6;
+ for(let i=0;i<N;i++){const ts=i/FS-10;a=.985*a+gauss()*1.6;b=.80*b+gauss()*2.4;
+  const am=1+.5*Math.sin(ts*.9+c);let v=a+b+gauss()*1.4+am*3.2*Math.sin(2*Math.PI*10.2*ts+ph);
+  for(const k of blinks){const d=ts-k;if(Math.abs(d)<.6){
+   if(c===0)v+=-98*Math.exp(-Math.pow(d/.035,2))+40*Math.exp(-Math.pow((d-.09)/.05,2));
+   else if(c<3)v+=(c===1?30:24)*Math.exp(-Math.pow(d/.13,2))-10*Math.exp(-Math.pow((d-.28)/.12,2));}}
+  if(c===3){const w=Math.min(1,Math.max(0,(ts-4.6)/3.2));v=v*(.15+.85*w)+(1-w)*gauss()*62;}
+  sig[c][i]=v;}}
+// ---------- protocol (current dashboard: Full study, 21:05) ----------
+const segs=[["ready",5],["closed",120],["open",120]];
+const order=[["r","a"],["a","r"],["r","a"],["a","r"],["r","a"],["a","r"],["r","a"],["a","r"],["r","a"],["a","r"]];
+order.forEach((p,bi)=>p.forEach(k=>{segs.push([k==="a"?"arith":"rest",40,bi+1]);segs.push(["break",8,bi+1]);}));
+segs.push(["end",60]);let acc=0;segs.forEach(s=>{s.start=acc;acc+=s[1];});const TOTAL=acc;
+const SC={ready:"#3a414d",closed:"#59627a",open:"#7a8394",rest:"#5ea3f7",arith:"#ef8a3c",break:"#2a2f38",end:"#7a8394"};
+const NAME={ready:"Get ready",closed:"Baseline · eyes closed",open:"Baseline · eyes open",rest:"REST",arith:"ARITHMETIC",break:"Break",end:"Final baseline · eyes open"};
+const tlbar=document.getElementById("tlbar");
+segs.forEach(s=>{const e=document.createElement("span");e.style.left=(100*s.start/TOTAL)+"%";e.style.width=(100*s[1]/TOTAL)+"%";e.style.background=SC[s[0]];tlbar.appendChild(e)});
+const shade=document.createElement("div");shade.className="done";tlbar.appendChild(shade);
+const ph=document.createElement("div");ph.className="ph";tlbar.appendChild(ph);
+const a6=segs.findIndex(s=>s[0]==="arith"&&s[2]===6);
+const fmt=x=>{x=Math.max(0,Math.floor(x));return String(Math.floor(x/60)).padStart(2,"0")+":"+String(x%60).padStart(2,"0")};
+const $=id=>document.getElementById(id);
+// ---------- storyboard: animation time t -> state ----------
+function story(t){
+ if(t<8.15)return{mode:"pre"};
+ if(t<11.6)return{mode:"rec",s:2.2+(t-8.15),ff:null};
+ if(t<16.2)return{mode:"rec",s:segs[a6].start+9+(t-11.6),ff:t<13?"⏩  12 min later":null};
+ if(t<19.8)return{mode:"rec",s:segs[a6+1].start+.8+(t-16.2),ff:null};
+ return{mode:"done",s:TOTAL};
+}
+const lerp=(a,b,x)=>a+(b-a)*Math.min(1,Math.max(0,x));
+function quality(t){const j=k=>.6*Math.sin(t*3.1+k*1.7)+.3*Math.sin(t*7.3+k);
+ return[lerp(23.3,14.6,(t-2.6)/2.4)+j(0),8.6+j(1)*.5,11.3+j(2)*.6,
+  t<4.8?64.7+j(3)*2:t<6.4?lerp(64.7,31.5,(t-4.8)/1.0)+j(3):lerp(31.5,12.4,(t-6.4)/1.0)+j(3)*.5];}
+const status=v=>v<20?["GOOD","b-good",getComputedStyle(document.body).getPropertyValue("--green")]:v<40?["ADJUST","b-adj","#e0a43c"]:["POOR","b-poor","#e5534b"];
+const fill=v=>Math.min(1,.15+.8*Math.log(v/3)/Math.log(80/3));
+function drawEEG(t){const cv=$("eeg"),g=cv.getContext("2d"),W=cv.width,H=cv.height;g.clearRect(0,0,W,H);
+ const x0=95,rowH=(H-40)/4,end=Math.floor((t+10)*FS),n=10*FS;
+ g.strokeStyle="#252a32";g.lineWidth=1;for(let k=0;k<=10;k++){const x=x0+(W-x0-8)*k/10;g.beginPath();g.moveTo(x,6);g.lineTo(x,H-34);g.stroke();
+  g.fillStyle="#8b93a0";g.font="14px 'DejaVu Sans Mono'";g.textAlign="center";g.fillText(k===10?"now":(k-10)+"s",x,H-12);}
+ for(let r=1;r<4;r++){g.beginPath();g.moveTo(x0,r*rowH+4);g.lineTo(W-8,r*rowH+4);g.stroke();}
+ const mx=k=>{let m=0;for(let i=end-n;i<end;i+=4)m=Math.max(m,Math.abs(sig[k][i]));return m};const auto=m=>m>90?200:m>45?100:50;const scales=[100,50,50,auto(mx(3))];
+ for(let c=0;c<4;c++){const mid=c*rowH+rowH/2+4;g.textAlign="left";g.fillStyle=COL[c];g.font="bold 16px 'DejaVu Sans Mono'";g.fillText(CH[c],12,mid-6);
+  g.fillStyle="#8b93a0";g.font="13px 'DejaVu Sans Mono'";g.fillText("±"+scales[c]+" µV",12,mid+14);
+  g.save();g.beginPath();g.rect(x0,c*rowH+4,W-x0,rowH);g.clip();g.strokeStyle=COL[c];g.lineWidth=1.6;g.beginPath();
+  for(let i=0;i<n;i+=2){const v=sig[c][end-n+i],x=x0+(W-x0-8)*i/n,y=mid-v/scales[c]*rowH*.48;i?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();g.restore();}}
+function render(t){const st=story(t),q=quality(t);
+ // signal quality
+ $("sqrows").innerHTML=q.map((v,i)=>{const[s,c,col]=status(v);return`<div class="sq"><b>${CH[i]}</b><div class="bar"><i style="width:${100*fill(v)}%;background:${col}"></i></div><div class="val">${v.toFixed(1)} µV</div><div class="badge ${c}">${s}</div></div>`}).join("");
+ const allGood=q.every(v=>v<20);
+ $("hint").innerHTML=allGood?`<span style="color:#6dd17e">All four channels are GOOD.</span> Ready to record.`:`Get all four to <b style="color:var(--ink)">GOOD</b> before starting: dampen the sensors, move hair away from behind the ears, relax the jaw and sit still.`;
+ // left form + button
+ const b=$("startbtn");b.className="btn";$("formA").className=st.mode==="rec"?"dim":"";
+ if(st.mode==="rec"){b.textContent="Stop & save";b.classList.add("stop");}else b.textContent="Start recording";
+ if(t>7.95&&t<8.15)b.classList.add("pressed");
+ $("sesid").textContent=st.mode==="done"&&t>21?"02":"01";$("saves").textContent=st.mode==="done"&&t>21?"Saves to sub-01/ses-02/":"Saves to sub-01/ses-01/";
+ // session card
+ $("rec").style.display=st.mode==="rec"&&(Math.floor(t*2)%2===0)?"flex":"none";
+ $("ff").style.display=st.ff?"block":"none";if(st.ff)$("ff").textContent=st.ff;
+ if(st.mode==="pre"){$("ptitle").textContent="Ready";$("ptimer").textContent="--:--";$("ptimer").style.color="";
+  $("pmsg").innerHTML="Check signal quality, then press <b>Start recording</b>.";$("tlph").style.display="";$("tlbar").style.display="none";
+  ["sBlock","sTrial","sEl","sRem","sSmp"].forEach(k=>$(k).textContent="–");}
+ else{const s=st.s;let si=segs.findIndex(x=>s>=x.start&&s<x.start+x[1]);if(si<0)si=segs.length-1;const sg=segs[si];
+  const trial=segs.slice(0,si+1).filter(x=>x[0]==="rest"||x[0]==="arith").length;
+  $("tlph").style.display="none";$("tlbar").style.display="block";const f=Math.min(1,s/TOTAL);ph.style.left=`calc(${100*f}% - 1px)`;shade.style.width=(100*f)+"%";
+  $("sEl").textContent=fmt(s);$("sRem").textContent=fmt(TOTAL-s);$("sSmp").textContent=Math.floor(s*256.01).toLocaleString("en-US");
+  $("sBlock").textContent=sg[2]?sg[2]+"/10":"–";$("sTrial").textContent=trial?trial+"/20":"–";
+  if(st.mode==="done"){$("ptitle").textContent="Session complete";$("ptimer").textContent="21:05";$("ptimer").style.color="#6dd17e";
+   $("pmsg").innerHTML=`Saved <b>323,850</b> samples to <span class="mono">sub-01/ses-01/</span>: eeg.csv · events.csv · session.json`;$("sBlock").textContent="10/10";$("sTrial").textContent="20/20";$("sSmp").textContent="323,850";}
+  else{const left=sg.start+sg[1]-s;$("ptitle").textContent=NAME[sg[0]];$("ptimer").textContent=fmt(Math.ceil(left));
+   $("ptimer").style.color=sg[0]==="arith"?"#ef8a3c":sg[0]==="rest"?"#7fb4ff":"";
+   $("pmsg").innerHTML={ready:"Subject screen: <b>Get ready</b> · sit still, relax the jaw.",closed:"Subject has eyes closed · a sound cue tells them to open.",open:"Subject looks at the fixation cross.",rest:"Subject looks at the cross, mind calm.",
+    arith:"Subject sees <b class='mono' style='color:#ef8a3c'>847</b> and subtracts 7 repeatedly, silently.",break:`Break · blink, swallow, relax · next block in <b>${Math.ceil(left)}</b>`,end:"Final baseline."}[sg[0]];}}
+ // band power
+ const ar=st.mode==="rec"&&segs.find(x=>st.s>=x.start&&st.s<x.start+x[1])[0]==="arith";
+ const bp=[53+2*Math.sin(t*.7),17+Math.sin(t*1.1)+(ar?1.5:0),14+1.5*Math.sin(t*.9)-(ar?2.5:0),11+Math.sin(t*1.3)+(ar?1:0),5+.5*Math.sin(t*2)];
+ const tot=bp.reduce((a,b)=>a+b),cols=["#6f8ef7","#4cc3b0","#9fd25a","#e8ad4c","#ef6a8a"];
+ $("bp").innerHTML=bp.map((v,i)=>`<div style="height:${v/tot*100*1.6}px;background:${cols[i]}"><em>${Math.round(v/tot*100)}%</em></div>`).join("");
+ drawEEG(t<11.6?t:t+22);
+ // caption
+ const caps=[[0,"1","Fit the headband until all four channels read GOOD"],[8.15,"2","Start recording: the protocol runs on its own"],[11.6,"3","Arithmetic block: subject subtracts 7 from 847, silently"],[16.2,"4","8 s break between blocks: blink, swallow, relax"],[19.8,"5","Session saved, and the next session number is filled in"]];
+ const c=caps.filter(x=>t>=x[0]).pop();$("capn").textContent=c[1];$("capk").textContent=c[1];$("capt").textContent=c[2];
+ // cursor to Start button
+ const r=b.getBoundingClientRect(),tx=r.left+r.width*.55,ty=r.top+r.height*.55,sx=1180,sy=980;
+ const k=Math.min(1,Math.max(0,(t-6.6)/1.3)),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+ const cur=$("cursor");cur.style.display=t>6.4&&t<9.4?"block":"none";cur.style.left=(sx+(tx-sx)*e)+"px";cur.style.top=(sy+(ty-sy)*e)+"px";
+ const rp=$("ripple"),rk=(t-7.95)/.6;rp.style.display=rk>0&&rk<1?"block":"none";const rr=10+60*rk;
+ Object.assign(rp.style,{left:(tx-rr)+"px",top:(ty-rr)+"px",width:2*rr+"px",height:2*rr+"px",opacity:1-rk});
+}
+window.render=render;render(0);
+</script></body></html>

@@ -13,3 +13,4 @@ __pycache__/
 .DS_Store
 results/
 annotated/
+docs/demo/frames/
