@@ -1,0 +1,15 @@
+# Participant data never goes in this repo
+data/
+*.csv
+*.edf
+*.fif
+consent_forms/
+out/
+
+# Python / macOS
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+results/
+annotated/
